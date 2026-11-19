@@ -19,6 +19,31 @@ export default function PublicBusiness({ slug }) {
       .finally(() => setLoading(false));
   }, [slug]);
 
+  useEffect(() => {
+    if (!data?.business) return;
+    const b = data.business;
+    const canonical = b.canonical_url || window.location.href;
+    let link = document.querySelector('link[rel="canonical"]');
+    if (!link) { link = document.createElement('link'); link.rel = 'canonical'; document.head.appendChild(link); }
+    link.href = canonical;
+    const schema = {
+      '@context': 'https://schema.org',
+      '@type': 'LocalBusiness',
+      name: b.name,
+      description: b.seo_description || b.description || '',
+      url: canonical,
+      telephone: b.public_phone || undefined,
+      email: b.public_email || undefined,
+      address: (b.city || b.state) ? {'@type':'PostalAddress', addressLocality:b.city || undefined, addressRegion:b.state || undefined, addressCountry:'BR'} : undefined,
+      sameAs: [b.instagram_url,b.facebook_url].filter(Boolean)
+    };
+    let script = document.getElementById('marketia-business-schema');
+    if (!script) { script=document.createElement('script'); script.id='marketia-business-schema'; script.type='application/ld+json'; document.head.appendChild(script); }
+    script.textContent = JSON.stringify(schema);
+    fetch(API+'/api/public/business/'+encodeURIComponent(slug)+'/events', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({eventType:'page_view',source:document.referrer?'referral':'direct'})}).catch(()=>{});
+    return () => { link?.remove(); script?.remove(); };
+  }, [data,slug]);
+
   const submit = async event => {
     event.preventDefault(); setSending(true); setError('');
     try {
