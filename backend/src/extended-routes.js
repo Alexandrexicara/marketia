@@ -128,7 +128,7 @@ export function registerExtendedRoutes(app, { pool, auth, requireDatabase, slugi
         linkedin:`Como ${safeTopic} pode fazer a diferença no seu negócio`,
         blog:`Tudo o que você precisa saber sobre ${safeTopic}`
       };
-      const intro=tone==='formal'?'A ${b.name} apresenta uma solução pensada para atender você.':tone==='direct'?'Se você procura qualidade e praticidade, vale conhecer.':'Tem novidade boa por aqui! Preparamos uma opção especial para quem busca qualidade e confiança.';
+      const intro=tone==='formal'?`A ${b.name} apresenta uma solução pensada para atender você.`:tone==='direct'?'Se você procura qualidade e praticidade, vale conhecer.':'Tem novidade boa por aqui! Preparamos uma opção especial para quem busca qualidade e confiança.';
       const cta=objective==='sales'?'Fale com nossa equipe e solicite seu orçamento.':objective==='traffic'?'Acesse nossa página e conheça todos os detalhes.':'Compartilhe com alguém que também possa gostar!';
       const contentText=`${hooks[channel]||hooks.instagram}\n\n${intro}\n\n${safeTopic} faz parte do que a ${b.name} oferece em ${b.segment||'seu segmento'}. ${b.description||''}\n\n${cta}\n\n#${slugify(b.name).replace(/-/g,'')} #${slugify(safeTopic).replace(/-/g,'')} #NegóciosLocais`;
       const saved=await pool.query("INSERT INTO marketing_drafts(tenant_id,business_id,channel,objective,topic,tone,content) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *",[b.tenant_id,businessId,channel,objective,safeTopic,tone,contentText]);
