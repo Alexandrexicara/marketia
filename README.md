@@ -88,7 +88,7 @@ A migração 002 adiciona eventos de página, rascunhos de conteúdo, campanhas 
 - `GET /api/leads`, `PATCH /api/leads/:id`
 - `GET /api/analytics/overview`
 - `GET/POST /api/campaigns`, `PATCH /api/campaigns/:id`
-- `GET/POST /api/content/drafts`, `POST /api/content/generate`
+- `GET /api/content/drafts`, `POST /api/content/generate`, `PATCH /api/content/drafts/:id`
 - `GET /api/public/business/:slug`
 - `POST /api/public/business/:slug/leads`
 - `POST /api/public/business/:slug/events`
