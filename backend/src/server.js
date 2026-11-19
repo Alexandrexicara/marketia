@@ -5,6 +5,7 @@ import pg from 'pg';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { randomUUID } from 'node:crypto';
+import { registerExtendedRoutes } from './extended-routes.js';
 
 const app = express();
 const port = Number(process.env.PORT || 4000);
@@ -155,7 +156,7 @@ app.post('/api/businesses', requireDatabase, auth, async (req, res) => {
 });
 
 app.patch('/api/businesses/:id', requireDatabase, auth, async (req, res) => {
-  const allowed = ['name','segment','description','website','public_email','public_phone','city','state','seo_title','seo_description','status'];
+  const allowed = ['name','segment','description','website','public_email','public_phone','city','state','seo_title','seo_description','status','logo_url','instagram_url','facebook_url','whatsapp_url','keywords','canonical_url'];
   const fields = Object.keys(req.body || {}).filter(key => allowed.includes(key));
   if (!fields.length) return res.status(400).json({ error: 'Nenhum campo válido informado.' });
   const values = fields.map(key => req.body[key]);
@@ -232,9 +233,12 @@ app.post('/api/public/business/:slug/leads', requireDatabase, async (req, res) =
       "INSERT INTO leads (tenant_id,business_id,name,email,phone,message,source,consent_at) VALUES ($1,$2,$3,$4,$5,$6,'public_page',NOW())",
       [business.rows[0].tenant_id,business.rows[0].id,name.trim(),email || null,phone || null,message || null]
     );
+    await pool.query("INSERT INTO page_events(tenant_id,business_id,event_type,source) VALUES($1,$2,'lead_submit','public_page')",[business.rows[0].tenant_id,business.rows[0].id]);
     return res.status(201).json({ ok: true, message: 'Contato enviado com sucesso.' });
   } catch (error) { console.error('Lead creation failed:', error.message); return res.status(500).json({ error: 'Não foi possível enviar o contato.' }); }
 });
+
+registerExtendedRoutes(app, { pool, auth, requireDatabase, slugify });
 
 app.use((err, _req, res, _next) => {
   console.error(err.message);
