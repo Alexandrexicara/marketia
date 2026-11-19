@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';\nimport PublicBusiness from './PublicBusiness.jsx';
 import { Activity, ArrowUpRight, BarChart3, Bot, Building2, CheckCircle2, ChevronDown, CircleHelp, Globe2, LogOut, Megaphone, MessageSquareText, Plus, Search, Settings2, ShieldCheck, Sparkles, Store, Users, WandSparkles, X, LoaderCircle } from 'lucide-react';
 
 const API = 'https://marketia-54ra.onrender.com';
@@ -21,7 +21,7 @@ async function api(path, token, options = {}) {
   return data;
 }
 
-function App() {
+function Dashboard() {
   const [token, setToken] = useState(() => localStorage.getItem('marketia_token') || '');
   const [user, setUser] = useState(null);
   const [tenant, setTenant] = useState(null);
@@ -117,4 +117,4 @@ function App() {
   </div>;
 }
 
-export default App;
+export default function App() {\n  const match = window.location.pathname.match(/^\\/empresa\\/([^/]+)\\/?$/);\n  return match ? <PublicBusiness slug={decodeURIComponent(match[1])} /> : <Dashboard />;\n}
