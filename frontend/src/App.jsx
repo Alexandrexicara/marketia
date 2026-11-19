@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';\nimport PublicBusiness from './PublicBusiness.jsx';
+import React, { useEffect, useMemo, useState } from 'react';
+import PublicBusiness from './PublicBusiness.jsx';
 import { Activity, ArrowUpRight, BarChart3, Bot, Building2, CheckCircle2, ChevronDown, CircleHelp, Globe2, LogOut, Megaphone, MessageSquareText, Plus, Search, Settings2, ShieldCheck, Sparkles, Store, Users, WandSparkles, X, LoaderCircle } from 'lucide-react';
 
 const API = 'https://marketia-54ra.onrender.com';
