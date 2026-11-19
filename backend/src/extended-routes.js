@@ -160,4 +160,9 @@ export function registerExtendedRoutes(app, { pool, auth, requireDatabase, slugi
     const origin=(process.env.PUBLIC_SITE_URL||'https://marketdigitalia.netlify.app').replace(/\/$/,'');
     res.type('text/plain').send(`User-agent: *\nAllow: /\nSitemap: ${process.env.API_PUBLIC_URL||'https://marketia-54ra.onrender.com'}/sitemap.xml\n`);
   });
+
+  // Assistente virtual NVIDIA do MarketIA
+  import('./assistant-routes.js').then(({ default: assistantRouter }) => {
+    app.use('/api/assistant', assistantRouter);
+  }).catch(error => console.error('MarketIA assistant route failed to load:', error.message));
 }
