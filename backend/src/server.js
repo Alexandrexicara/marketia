@@ -131,7 +131,7 @@ app.get('/api/me', requireDatabase, auth, async (req, res) => {
 app.get('/api/businesses', requireDatabase, auth, async (req, res) => {
   try {
     const { rows } = await pool.query(
-      "SELECT b.id,b.name,b.slug,b.segment,b.description,b.website,b.public_email,b.public_phone,b.city,b.state,b.seo_title,b.seo_description,b.status,b.created_at,tm.tenant_id FROM businesses b JOIN tenant_memberships tm ON tm.tenant_id=b.tenant_id JOIN tenants t ON t.id=tm.tenant_id WHERE tm.user_id=$1 AND t.status='active' ORDER BY b.created_at DESC",
+      "SELECT b.id,b.name,b.slug,b.segment,b.description,b.website,b.public_email,b.public_phone,b.city,b.state,b.seo_title,b.seo_description,b.logo_url,b.instagram_url,b.facebook_url,b.whatsapp_url,b.keywords,b.canonical_url,b.status,b.created_at,tm.tenant_id FROM businesses b JOIN tenant_memberships tm ON tm.tenant_id=b.tenant_id JOIN tenants t ON t.id=tm.tenant_id WHERE tm.user_id=$1 AND t.status='active' ORDER BY b.created_at DESC",
       [req.userId]
     );
     return res.json({ businesses: rows });
@@ -213,7 +213,7 @@ app.get('/api/leads', requireDatabase, auth, async (req, res) => {
 app.get('/api/public/business/:slug', requireDatabase, async (req, res) => {
   try {
     const { rows } = await pool.query(
-      "SELECT id,name,slug,segment,description,website,public_email,public_phone,city,state,seo_title,seo_description FROM businesses WHERE slug=$1 AND status='published' LIMIT 1",
+      "SELECT id,name,slug,segment,description,website,public_email,public_phone,city,state,seo_title,seo_description,logo_url,instagram_url,facebook_url,whatsapp_url,keywords,canonical_url FROM businesses WHERE slug=$1 AND status='published' LIMIT 1",
       [req.params.slug]
     );
     if (!rows.length) return res.status(404).json({ error: 'Business not found' });
