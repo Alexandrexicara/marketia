@@ -111,3 +111,14 @@ Rotas privadas exigem `Authorization: Bearer <token>`. Dados de cada empresa sã
 - Campanhas pagas nunca são ativadas sem integração e autorização explícitas.
 - Integrações externas devem usar APIs oficiais e credenciais armazenadas somente no backend.
 - Aplicar rate limiting, política de retenção e revisão de privacidade antes de escalar tráfego público.
+
+
+## Entrada pública e acesso
+
+- `/` apresenta a landing page pública do MarketIA, com recursos e explicação do fluxo.
+- `/cadastro` abre a criação de conta.
+- `/entrar` abre o login.
+- `/app` direciona para o painel autenticado.
+- `/empresa/:slug` continua reservado às páginas públicas dos negócios cadastrados.
+
+O checkout de pagamento ainda não está integrado; não existe cobrança automática ou bloqueio por pagamento nesta versão.
