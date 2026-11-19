@@ -24,6 +24,28 @@ export default function MarketAssistant() {
   useEffect(()=>{if(listRef.current)listRef.current.scrollTop=listRef.current.scrollHeight;},[messages,open]);
   useEffect(()=>()=>{try{recognitionRef.current?.stop();window.speechSynthesis?.cancel();}catch{}},[]);
 
+  const requestMicrophone=async()=>{
+    setError('');
+    if(!navigator.mediaDevices?.getUserMedia){
+      setError('Este navegador não liberou o microfone. Abra o link HTTPS no Google Chrome e habilite a permissão do microfone.');
+      return;
+    }
+    try{
+      const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+      stream.getTracks().forEach(track=>track.stop());
+      setError('');
+      startVoice();
+    }catch(e){
+      if(e.name==='NotAllowedError'||e.name==='PermissionDeniedError'){
+        setError('O acesso ao microfone foi bloqueado. No Chrome, toque no ícone ao lado do endereço, entre em Permissões do site > Microfone > Permitir e recarregue a página.');
+      }else if(e.name==='NotFoundError'){
+        setError('Não encontrei um microfone disponível neste aparelho.');
+      }else{
+        setError('Não consegui ativar o microfone. Confira as permissões do site nas configurações do navegador.');
+      }
+    }
+  };
+
   const startVoice=()=>{
     const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
     if(!SpeechRecognition){setError('O reconhecimento de voz não está disponível neste navegador. Abra o MarketIA no Chrome e permita o microfone.');return;}
@@ -72,7 +94,7 @@ export default function MarketAssistant() {
 
   const openAssistant=()=>{
     setOpen(true);openRef.current=true;setError('');
-    setTimeout(()=>startVoice(),450);
+    setError('Toque em ATIVAR MICROFONE para começar a conversa.');
   };
   const closeAssistant=()=>{
     setOpen(false);openRef.current=false;setListening(false);
@@ -84,7 +106,7 @@ export default function MarketAssistant() {
       <header className="market-assistant-head"><div className="market-assistant-avatar"><Bot size={22}/></div><div className="market-assistant-heading"><strong>Assistente MarketIA</strong><small>{busy?'Pensando…':listening?'Estou ouvindo você…':'Conversa por voz'}</small></div><button className="market-assistant-voice" onClick={()=>{setSpeaking(v=>{speakingRef.current=!v;if(v)window.speechSynthesis?.cancel();return !v;});}} title={speaking?'Desativar voz':'Ativar voz'}>{speaking?<Volume2 size={18}/>:<VolumeX size={18}/>}</button><button className="market-assistant-close" onClick={closeAssistant} aria-label="Fechar"><X size={19}/></button></header>
       <div className="market-assistant-messages" ref={listRef}>{messages.map((m,i)=><div key={i} className={'market-assistant-message '+m.role}><span className="message-role">{m.role==='user'?'Você':'MarketIA'}</span>{m.content}</div>)}{busy&&<div className="market-assistant-message assistant thinking"><LoaderCircle size={16}/> Estou preparando a resposta…</div>}</div>
       {error&&<div className="market-assistant-error">{error}</div>}
-      <div className="market-assistant-voice-area"><button type="button" className={'market-assistant-mic '+(listening?'active':'')} onClick={startVoice} disabled={busy} aria-label="Falar com o assistente"><Mic size={25}/></button><strong>{busy?'Aguarde a resposta':listening?'Pode falar':'Toque para falar'}</strong><span>Não é necessário digitar. A conversa acontece por voz.</span></div>
+      <div className="market-assistant-voice-area"><button type="button" className={'market-assistant-mic '+(listening?'active':'')} onClick={requestMicrophone} disabled={busy} aria-label="Ativar microfone e falar"><Mic size={25}/></button><strong>{busy?'Aguarde a resposta':listening?'Pode falar':'Ativar microfone'}</strong><span>{listening?'Estou ouvindo sua pergunta.':'Toque no botão para autorizar o microfone e começar a falar.'}</span></div>
       <p className="market-assistant-note">Usa o microfone e a voz disponíveis no seu aparelho. Não utiliza ElevenLabs.</p>
     </section>}
     {!open&&<div className="market-assistant-hint"><b>Precisa de ajuda?</b><span>Toque para conversar por voz</span></div>}
