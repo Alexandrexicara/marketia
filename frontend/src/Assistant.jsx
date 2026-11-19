@@ -26,22 +26,33 @@ export default function MarketAssistant() {
 
   const requestMicrophone=async()=>{
     setError('');
-    if(!navigator.mediaDevices?.getUserMedia){
-      setError('Este navegador não liberou o microfone. Abra o link HTTPS no Google Chrome e habilite a permissão do microfone.');
+    if(!window.isSecureContext){
+      setError('O navegador não está em uma conexão segura. Abra https://marketdigitalia.netlify.app diretamente no Chrome ou Safari.');
+      return;
+    }
+    if(!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia!=='function'){
+      setError('Este navegador interno não oferece acesso ao microfone. Abra esta página no navegador do aparelho: menu ⋮ > Abrir no Chrome.');
       return;
     }
     try{
-      const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+      const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});
       stream.getTracks().forEach(track=>track.stop());
-      setError('');
+      await new Promise(resolve=>setTimeout(resolve,350));
+      const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+      if(!SpeechRecognition){
+        setError('O microfone foi autorizado, mas este navegador não oferece reconhecimento de fala. No Android, abra no Google Chrome; no computador, use Chrome ou Edge.');
+        return;
+      }
       startVoice();
     }catch(e){
       if(e.name==='NotAllowedError'||e.name==='PermissionDeniedError'){
-        setError('O acesso ao microfone foi bloqueado. No Chrome, toque no ícone ao lado do endereço, entre em Permissões do site > Microfone > Permitir e recarregue a página.');
-      }else if(e.name==='NotFoundError'){
-        setError('Não encontrei um microfone disponível neste aparelho.');
+        setError('O navegador ou o Android bloqueou o microfone. No Chrome: toque no cadeado/ícone ao lado do endereço > Permissões > Microfone > Permitir. Confira também Configurações do Android > Apps > Chrome > Permissões > Microfone.');
+      }else if(e.name==='NotFoundError'||e.name==='DevicesNotFoundError'){
+        setError('Não encontrei um microfone disponível ou conectado neste aparelho.');
+      }else if(e.name==='NotReadableError'){
+        setError('O microfone está sendo usado por outro aplicativo. Feche esse aplicativo e tente novamente.');
       }else{
-        setError('Não consegui ativar o microfone. Confira as permissões do site nas configurações do navegador.');
+        setError('Não foi possível abrir o microfone ('+(e.name||'erro')+'). Abra o MarketIA no navegador principal do aparelho e tente novamente.');
       }
     }
   };
@@ -106,7 +117,7 @@ export default function MarketAssistant() {
       <header className="market-assistant-head"><div className="market-assistant-avatar"><Bot size={22}/></div><div className="market-assistant-heading"><strong>Assistente MarketIA</strong><small>{busy?'Pensando…':listening?'Estou ouvindo você…':'Conversa por voz'}</small></div><button className="market-assistant-voice" onClick={()=>{setSpeaking(v=>{speakingRef.current=!v;if(v)window.speechSynthesis?.cancel();return !v;});}} title={speaking?'Desativar voz':'Ativar voz'}>{speaking?<Volume2 size={18}/>:<VolumeX size={18}/>}</button><button className="market-assistant-close" onClick={closeAssistant} aria-label="Fechar"><X size={19}/></button></header>
       <div className="market-assistant-messages" ref={listRef}>{messages.map((m,i)=><div key={i} className={'market-assistant-message '+m.role}><span className="message-role">{m.role==='user'?'Você':'MarketIA'}</span>{m.content}</div>)}{busy&&<div className="market-assistant-message assistant thinking"><LoaderCircle size={16}/> Estou preparando a resposta…</div>}</div>
       {error&&<div className="market-assistant-error">{error}</div>}
-      <div className="market-assistant-voice-area"><button type="button" className={'market-assistant-mic '+(listening?'active':'')} onClick={requestMicrophone} disabled={busy} aria-label="Ativar microfone e falar"><Mic size={25}/></button><strong>{busy?'Aguarde a resposta':listening?'Pode falar':'Ativar microfone'}</strong><span>{listening?'Estou ouvindo sua pergunta.':'Toque no botão para autorizar o microfone e começar a falar.'}</span></div>
+      <div className="market-assistant-voice-area"><button type="button" className={'market-assistant-mic '+(listening?'active':'')} onClick={requestMicrophone} disabled={busy} aria-label="Permitir acesso ao microfone e falar"><Mic size={25}/><span>PERMITIR MICROFONE</span></button><strong>{busy?'Aguarde a resposta':listening?'Pode falar':'Toque para autorizar'}</strong><span>{listening?'Estou ouvindo sua pergunta.':'Toque no botão para autorizar o microfone e começar a falar.'}</span></div>
       <p className="market-assistant-note">Usa o microfone e a voz disponíveis no seu aparelho. Não utiliza ElevenLabs.</p>
     </section>}
     {!open&&<div className="market-assistant-hint"><b>Precisa de ajuda?</b><span>Toque para conversar por voz</span></div>}
