@@ -117,4 +117,7 @@ function Dashboard() {
   </div>;
 }
 
-export default function App() {\n  const match = window.location.pathname.match(/^\\/empresa\\/([^/]+)\\/?$/);\n  return match ? <PublicBusiness slug={decodeURIComponent(match[1])} /> : <Dashboard />;\n}
+export default function App() {
+  const parts = window.location.pathname.split('/').filter(Boolean);
+  return parts[0] === 'empresa' && parts[1] ? <PublicBusiness slug={decodeURIComponent(parts[1])} /> : <Dashboard />;
+}
