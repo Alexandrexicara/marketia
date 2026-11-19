@@ -54,7 +54,7 @@ app.get('/api/health', async (_req, res) => {
     try { await pool.query('SELECT 1'); database = 'connected'; }
     catch (error) { console.error('Database health check:', error.message); database = 'unavailable'; }
   }
-  res.status(200).json({ ok: true, service: 'marketia-api', version: '0.2.0', database, auth: Boolean(JWT_SECRET) });
+  res.status(200).json({ ok: true, service: 'marketia-api', version: '0.3.0', database, auth: Boolean(JWT_SECRET) });
 });
 
 app.post('/api/auth/register', requireDatabase, async (req, res) => {
