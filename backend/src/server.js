@@ -6,6 +6,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { randomUUID } from 'node:crypto';
 import { registerExtendedRoutes } from './extended-routes.js';
+import { registerMediaRoutes } from './media-routes.js';
 import { ensurePaymentsSchema, registerPaymentRoutes } from './payment-routes.js';
 
 const app = express();
@@ -264,6 +265,7 @@ app.post('/api/public/business/:slug/leads', requireDatabase, async (req, res) =
 
 registerPaymentRoutes(app, { pool, sessionAuth, requireDatabase });
 registerExtendedRoutes(app, { pool, auth, requireDatabase, slugify });
+registerMediaRoutes(app, { pool, auth, requireDatabase });
 
 app.use((err, _req, res, _next) => {
   console.error(err.message);
