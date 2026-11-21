@@ -58,6 +58,7 @@ npm run dev
 ## Variáveis de ambiente
 
 Backend (`backend/.env` ou Render):
+- `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_PUBLIC_URL`: credenciais e URL pública do Cloudflare R2; mantenha somente no backend.
 - `DATABASE_URL`: conexão PostgreSQL/Neon.
 - `JWT_SECRET`: segredo forte para assinatura dos tokens.
 - `ALLOWED_ORIGINS`: origens separadas por vírgula, incluindo o domínio Netlify.
@@ -74,12 +75,17 @@ Frontend:
 
 A produção utiliza PostgreSQL no Neon. O schema completo está em `database/schema.sql`. Para atualizar uma instalação existente, aplique as migrações em ordem:
 1. `database/migrations/002_marketia_growth.sql`
+2. `database/migrations/003_business_media.sql`
 
 A migração 002 adiciona eventos de página, rascunhos de conteúdo, campanhas e campos complementares de CRM/SEO.
 
 ## Rotas principais da API
 
 - `GET /api/health`
+- `GET /api/businesses/:id/media`
+- `POST /api/businesses/:id/media/upload-url`
+- `POST /api/businesses/:id/media/:mediaId/complete`
+- `DELETE /api/businesses/:id/media/:mediaId`
 - `POST /api/auth/register`, `POST /api/auth/login`
 - `GET /api/me`
 - `GET/POST /api/businesses`, `PATCH /api/businesses/:id`
