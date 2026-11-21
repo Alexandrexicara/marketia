@@ -3,8 +3,8 @@ import { randomUUID } from 'node:crypto';
 
 const PRICE_CENTS = 200000;
 const PRICE_REAIS = 2000;
-const PIX_KEY = 'santossilvac992@gmail.com';
-const WHATSAPP = '5538988283318';
+const PIX_KEY = process.env.PIX_KEY || 'santossilvac992@gmail.com';
+const WHATSAPP = process.env.PIX_WHATSAPP || '5538988283318';
 
 export async function ensurePaymentsSchema(pool) {
   if (!pool) return;
