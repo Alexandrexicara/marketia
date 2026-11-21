@@ -14,7 +14,23 @@ export default function PublicBusiness({ slug }) {
   useEffect(() => {
     fetch(API + '/api/public/business/' + encodeURIComponent(slug))
       .then(async response => { const result = await response.json(); if (!response.ok) throw new Error(result.error || 'Página não encontrada.'); return result; })
-      .then(result => { setData(result); document.title = result.business.seo_title || result.business.name; const description = document.querySelector('meta[name="description"]'); if (description) description.setAttribute('content', result.business.seo_description || result.business.description || result.business.name); })
+      .then(result => {
+        setData(result);
+        const b=result.business;
+        const title=b.seo_title||b.name;
+        const descriptionText=b.seo_description||b.description||b.name;
+        document.title=title;
+        const setMeta=(selector,attribute,value,create)=>{let node=document.querySelector(selector);if(!node&&create){node=document.createElement('meta');if(selector.startsWith('meta[property='))node.setAttribute('property',selector.match(/\[property="([^"]+)/)?.[1]||'');else node.setAttribute('name',selector.match(/\[name="([^"]+)/)?.[1]||'');document.head.appendChild(node);}if(node)node.setAttribute(attribute,value);};
+        setMeta('meta[name="description"]','content',descriptionText,true);
+        setMeta('meta[name="keywords"]','content',b.keywords||'',true);
+        setMeta('meta[property="og:type"]','content','website',true);
+        setMeta('meta[property="og:title"]','content',title,true);
+        setMeta('meta[property="og:description"]','content',descriptionText,true);
+        setMeta('meta[property="og:url"]','content',window.location.href,true);
+        setMeta('meta[name="twitter:card"]','content','summary',true);
+        setMeta('meta[name="twitter:title"]','content',title,true);
+        setMeta('meta[name="twitter:description"]','content',descriptionText,true);
+      })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
   }, [slug]);
