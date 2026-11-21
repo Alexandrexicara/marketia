@@ -43,7 +43,13 @@ const sessionAuth = (req, res, next) => {
     const payload = jwt.verify(token, JWT_SECRET, { issuer: 'marketia' });
     req.userId = payload.sub;
     req.userEmail = payload.email || '';
-    next();
+    pool.query("SELECT status FROM users WHERE id=$1", [req.userId]).then(result => {
+      if (!result.rowCount || result.rows[0].status !== 'active') return res.status(403).json({ error: 'Esta conta está bloqueada ou indisponível.' });
+      next();
+    }).catch(error => {
+      console.error('Session status check:', error.message);
+      res.status(503).json({ error: 'Não foi possível validar a conta agora.' });
+    });
   } catch {
     return res.status(401).json({ error: 'Invalid or expired session' });
   }
