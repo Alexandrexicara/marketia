@@ -6,6 +6,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { randomUUID } from 'node:crypto';
 import { registerExtendedRoutes } from './extended-routes.js';
+import { ensurePaymentsSchema, registerPaymentRoutes } from './payment-routes.js';
 
 const app = express();
 const port = Number(process.env.PORT || 4000);
@@ -34,18 +35,31 @@ const makeToken = (user) => {
   if (!JWT_SECRET) throw new Error('JWT_SECRET is not configured');
   return jwt.sign({ sub: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d', issuer: 'marketia' });
 };
-const auth = (req, res, next) => {
+const sessionAuth = (req, res, next) => {
   const header = req.headers.authorization || '';
   const token = header.startsWith('Bearer ') ? header.slice(7) : '';
   if (!token || !JWT_SECRET) return res.status(401).json({ error: 'Authentication required' });
   try {
     const payload = jwt.verify(token, JWT_SECRET, { issuer: 'marketia' });
     req.userId = payload.sub;
+    req.userEmail = payload.email || '';
     next();
   } catch {
     return res.status(401).json({ error: 'Invalid or expired session' });
   }
 };
+const auth = (req, res, next) => sessionAuth(req, res, async () => {
+  const adminEmail = String(process.env.ADMIN_EMAIL || '').trim().toLowerCase();
+  if (adminEmail && String(req.userEmail || '').toLowerCase() === adminEmail) return next();
+  try {
+    const paid = await pool.query("SELECT 1 FROM marketia_payments WHERE user_id=$1 AND status='paid' LIMIT 1", [req.userId]);
+    if (!paid.rowCount) return res.status(402).json({ error: 'O acesso permanente ao MarketIA precisa ser liberado após a confirmação do pagamento.' });
+    next();
+  } catch (error) {
+    console.error('Payment access check:', error.message);
+    res.status(503).json({ error: 'Não foi possível validar o acesso financeiro agora.' });
+  }
+});
 const safeUser = (row) => ({ id: row.id, email: row.email, displayName: row.display_name });
 
 app.get('/api/health', async (_req, res) => {
@@ -116,7 +130,7 @@ app.post('/api/auth/login', requireDatabase, async (req, res) => {
   }
 });
 
-app.get('/api/me', requireDatabase, auth, async (req, res) => {
+app.get('/api/me', requireDatabase, sessionAuth, async (req, res) => {
   try {
     const result = await pool.query(
       "SELECT u.id,u.email,u.display_name,t.id AS tenant_id,t.name AS tenant_name,tm.role FROM users u LEFT JOIN tenant_memberships tm ON tm.user_id=u.id LEFT JOIN tenants t ON t.id=tm.tenant_id AND t.status='active' WHERE u.id=$1 AND u.status='active' LIMIT 1",
@@ -124,7 +138,10 @@ app.get('/api/me', requireDatabase, auth, async (req, res) => {
     );
     if (!result.rows.length) return res.status(404).json({ error: 'User not found' });
     const row = result.rows[0];
-    return res.json({ user: safeUser(row), tenant: row.tenant_id ? { id: row.tenant_id, name: row.tenant_name, role: row.role } : null });
+    const adminEmail = String(process.env.ADMIN_EMAIL || '').trim().toLowerCase();
+    const isAdmin = Boolean(adminEmail && String(req.userEmail || '').toLowerCase() === adminEmail);
+    const payment = await pool.query('SELECT id,method,amount_cents,currency,status,created_at,updated_at FROM marketia_payments WHERE user_id=$1 ORDER BY created_at DESC LIMIT 1',[req.userId]);
+    return res.json({ user: safeUser(row), tenant: row.tenant_id ? { id: row.tenant_id, name: row.tenant_name, role: row.role } : null, isAdmin, payment: payment.rows[0] || null, access: isAdmin || payment.rows[0]?.status === 'paid' });
   } catch (error) { console.error('Profile failed:', error.message); return res.status(500).json({ error: 'Internal server error' }); }
 });
 
@@ -238,6 +255,7 @@ app.post('/api/public/business/:slug/leads', requireDatabase, async (req, res) =
   } catch (error) { console.error('Lead creation failed:', error.message); return res.status(500).json({ error: 'Não foi possível enviar o contato.' }); }
 });
 
+registerPaymentRoutes(app, { pool, sessionAuth, requireDatabase });
 registerExtendedRoutes(app, { pool, auth, requireDatabase, slugify });
 
 app.use((err, _req, res, _next) => {
@@ -245,4 +263,8 @@ app.use((err, _req, res, _next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
-app.listen(port, () => console.log(`MarketIA API listening on port ${port}`));
+const start = async () => {
+  if (pool) await ensurePaymentsSchema(pool);
+  app.listen(port, () => console.log(`MarketIA API listening on port ${port}`));
+};
+start().catch(error => { console.error('MarketIA startup failed:', error.message); process.exit(1); });
