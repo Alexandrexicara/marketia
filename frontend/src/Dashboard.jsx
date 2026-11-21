@@ -29,11 +29,15 @@ export default function Dashboard({ initialAuthMode = 'login' }) {
   const selected=useMemo(()=>businesses.find(b=>b.id===selectedId)||businesses[0]||null,[businesses,selectedId]);
 
   const refresh=async(session=token)=>{
-    const [me,biz,lead]=await Promise.all([api('/api/me',session),api('/api/businesses',session),api('/api/leads',session)]);
+    const me=await api('/api/me',session);
+    setUser(me.user);setTenant(me.tenant);setIsAdmin(Boolean(me.isAdmin));setAccess(Boolean(me.access));
+    if(!me.access&&!me.isAdmin){
+      setBusinesses([]);setLeads([]);setCampaigns([]);setDrafts([]);setAnalytics({overview:{},daily:[]});setBackendModulesAvailable(true);return;
+    }
+    const [biz,lead]=await Promise.all([api('/api/businesses',session),api('/api/leads',session)]);
     const extras=await Promise.allSettled([api('/api/campaigns',session),api('/api/content/drafts',session),api('/api/analytics/overview',session)]);
     const ready=extras.every(item=>item.status==='fulfilled');
-    setBackendModulesAvailable(ready);
-    setUser(me.user);setTenant(me.tenant);setIsAdmin(Boolean(me.isAdmin));setAccess(Boolean(me.access));setBusinesses(biz.businesses||[]);setLeads(lead.leads||[]);
+    setBackendModulesAvailable(ready);setBusinesses(biz.businesses||[]);setLeads(lead.leads||[]);
     setCampaigns(extras[0].status==='fulfilled'?(extras[0].value.campaigns||[]):[]);
     setDrafts(extras[1].status==='fulfilled'?(extras[1].value.drafts||[]):[]);
     setAnalytics(extras[2].status==='fulfilled'?extras[2].value:{overview:{},daily:[]});
