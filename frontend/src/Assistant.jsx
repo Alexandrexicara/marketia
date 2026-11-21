@@ -5,6 +5,30 @@ import './Assistant.css';
 const API = 'https://marketia-54ra.onrender.com';
 const greeting = 'Olá! Eu sou o assistente do MarketIA. Você pode escrever sua dúvida ou tocar no microfone para falar comigo.';
 
+const cleanForSpeech = (value) => String(value || '')
+  .replace(/```[\s\S]*?```/g, ' ')
+  .replace(/!\[([^\]]*)\]\([^)]*\)/g, ' ')
+  .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1')
+  .replace(/https?:\/\/\S+/g, ' ')
+  .replace(/<[^>]*>/g, ' ')
+  .replace(/^\s{0,3}#{1,6}\s*/gm, '')
+  .replace(/^\s*>\s?/gm, '')
+  .replace(/^\s*(?:[-+*•▪◦‣]|\d+[.)])\s+/gm, '')
+  .replace(/\|/g, ' ')
+  .replace(/^\s*[-:| ]{3,}\s*$/gm, ' ')
+  .replace(/\*\*(.*?)\*\*/gs, '$1')
+  .replace(/__(.*?)__/gs, '$1')
+  .replace(/\*(.*?)\*/gs, '$1')
+  .replace(/_(.*?)_/gs, '$1')
+  .replace(/~~(.*?)~~/gs, '$1')
+  .replace(/`([^\`]+)`/g, '$1')
+  .replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, ' ')
+  .replace(/[\*_#~`]/g, ' ')
+  .replace(/\s*([,.;:!?])\s*/g, '$1 ')
+  .replace(/([!?.,;:]){2,}/g, '$1')
+  .replace(/\s+/g, ' ')
+  .trim();
+
 export default function MarketAssistant() {
   const [open,setOpen]=useState(false);
   const [messages,setMessages]=useState([{role:'assistant',content:greeting}]);
@@ -76,8 +100,10 @@ export default function MarketAssistant() {
 
   const say=(value,resumeListening=false)=>{
     if(!speakingRef.current||!('speechSynthesis'in window))return;
+    const spokenText=cleanForSpeech(value);
+    if(!spokenText)return;
     window.speechSynthesis.cancel();
-    const utterance=new SpeechSynthesisUtterance(value);
+    const utterance=new SpeechSynthesisUtterance(spokenText);
     utterance.lang='pt-BR';
     const pt=window.speechSynthesis.getVoices().filter(v=>v.lang?.toLowerCase().startsWith('pt'));
     utterance.voice=pt.find(v=>/google|luciana|francisca|female|maria/i.test(v.name))||pt[0]||null;
