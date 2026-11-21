@@ -51,6 +51,7 @@ const sessionAuth = (req, res, next) => {
 const auth = (req, res, next) => sessionAuth(req, res, async () => {
   const adminEmail = String(process.env.ADMIN_EMAIL || '').trim().toLowerCase();
   if (adminEmail && String(req.userEmail || '').toLowerCase() === adminEmail) return next();
+  if (process.env.PAYWALL_ENABLED !== 'true') return next();
   try {
     const paid = await pool.query("SELECT 1 FROM marketia_payments WHERE user_id=$1 AND status='paid' LIMIT 1", [req.userId]);
     if (!paid.rowCount) return res.status(402).json({ error: 'O acesso permanente ao MarketIA precisa ser liberado após a confirmação do pagamento.' });
@@ -141,7 +142,7 @@ app.get('/api/me', requireDatabase, sessionAuth, async (req, res) => {
     const adminEmail = String(process.env.ADMIN_EMAIL || '').trim().toLowerCase();
     const isAdmin = Boolean(adminEmail && String(req.userEmail || '').toLowerCase() === adminEmail);
     const payment = await pool.query('SELECT id,method,amount_cents,currency,status,created_at,updated_at FROM marketia_payments WHERE user_id=$1 ORDER BY created_at DESC LIMIT 1',[req.userId]);
-    return res.json({ user: safeUser(row), tenant: row.tenant_id ? { id: row.tenant_id, name: row.tenant_name, role: row.role } : null, isAdmin, payment: payment.rows[0] || null, access: isAdmin || payment.rows[0]?.status === 'paid' });
+    return res.json({ user: safeUser(row), tenant: row.tenant_id ? { id: row.tenant_id, name: row.tenant_name, role: row.role } : null, isAdmin, payment: payment.rows[0] || null, access: isAdmin || payment.rows[0]?.status === 'paid' || process.env.PAYWALL_ENABLED !== 'true' });
   } catch (error) { console.error('Profile failed:', error.message); return res.status(500).json({ error: 'Internal server error' }); }
 });
 
