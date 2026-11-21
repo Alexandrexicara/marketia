@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Bot, X, Mic, Volume2, VolumeX, LoaderCircle } from 'lucide-react';
+import { Bot, X, Mic, Volume2, VolumeX, LoaderCircle, Send } from 'lucide-react';
 import './Assistant.css';
 
 const API = 'https://marketia-54ra.onrender.com';
-const greeting = 'Olá! Eu sou o assistente do MarketIA. Toque no microfone e fale comigo.';
+const greeting = 'Olá! Eu sou o assistente do MarketIA. Você pode escrever sua dúvida ou tocar no microfone para falar comigo.';
 
 export default function MarketAssistant() {
   const [open,setOpen]=useState(false);
@@ -11,6 +11,7 @@ export default function MarketAssistant() {
   const [busy,setBusy]=useState(false);
   const [speaking,setSpeaking]=useState(true);
   const [listening,setListening]=useState(false);
+  const [draft,setDraft]=useState('');
   const [error,setError]=useState('');
   const listRef=useRef(null);
   const recognitionRef=useRef(null);
@@ -66,27 +67,28 @@ export default function MarketAssistant() {
       const recognition=new SpeechRecognition();
       recognition.lang='pt-BR';recognition.interimResults=false;recognition.maxAlternatives=1;
       recognition.onstart=()=>{setListening(true);setError('');};
-      recognition.onresult=e=>{const spoken=e.results?.[0]?.[0]?.transcript||'';setListening(false);if(spoken)ask(spoken);};
+      recognition.onresult=e=>{const spoken=e.results?.[0]?.[0]?.transcript||'';setListening(false);if(spoken)ask(spoken,true);};
       recognition.onerror=e=>{setListening(false);if(e.error==='not-allowed')setError('Permita o acesso ao microfone nas configurações do navegador.');else if(e.error!=='no-speech'&&e.error!=='aborted')setError('Não consegui ouvir. Toque no microfone e tente novamente.');};
       recognition.onend=()=>setListening(false);
       recognitionRef.current=recognition;recognition.start();
     }catch{setListening(false);setError('Não foi possível iniciar o microfone. Toque novamente para tentar.');}
   };
 
-  const say=(value)=>{
-    if(!speakingRef.current||!('speechSynthesis'in window)){if(openRef.current)setTimeout(()=>{if(openRef.current&&!busyRef.current)startVoice();},450);return;}
+  const say=(value,resumeListening=false)=>{
+    if(!speakingRef.current||!('speechSynthesis'in window))return;
     window.speechSynthesis.cancel();
     const utterance=new SpeechSynthesisUtterance(value);
     utterance.lang='pt-BR';
     const pt=window.speechSynthesis.getVoices().filter(v=>v.lang?.toLowerCase().startsWith('pt'));
     utterance.voice=pt.find(v=>/google|luciana|francisca|female|maria/i.test(v.name))||pt[0]||null;
     utterance.rate=1;
-    utterance.onend=()=>{if(openRef.current&&!busyRef.current)setTimeout(()=>{if(openRef.current&&!busyRef.current)startVoice();},350);};
-    utterance.onerror=()=>{if(openRef.current&&!busyRef.current)setTimeout(()=>{if(openRef.current&&!busyRef.current)startVoice();},500);};
+    const resume=()=>{if(resumeListening&&openRef.current&&!busyRef.current)setTimeout(()=>{if(openRef.current&&!busyRef.current)startVoice();},350);};
+    utterance.onend=resume;
+    utterance.onerror=resume;
     window.speechSynthesis.speak(utterance);
   };
 
-  const ask=async(value)=>{
+  const ask=async(value,voiceMode=false)=>{
     const question=String(value||'').trim();
     if(!question||busyRef.current)return;
     busyRef.current=true;setBusy(true);setError('');
@@ -99,13 +101,24 @@ export default function MarketAssistant() {
       const reply=String(data.reply||'').trim();
       if(!reply)throw new Error('A resposta veio vazia. Tente novamente.');
       setMessages(old=>[...old,{role:'assistant',content:reply}].slice(-14));
-      busyRef.current=false;setBusy(false);say(reply);
-    }catch(e){setError(e.message||'Falha ao conectar ao assistente.');busyRef.current=false;setBusy(false);if(openRef.current)setTimeout(()=>startVoice(),700);}
+      busyRef.current=false;setBusy(false);say(reply,voiceMode);
+    }catch(e){
+      setError(e.message||'Falha ao conectar ao assistente.');
+      busyRef.current=false;setBusy(false);
+      if(voiceMode&&openRef.current)setTimeout(()=>startVoice(),700);
+    }
+  };
+
+  const sendText=(event)=>{
+    event?.preventDefault();
+    const question=draft.trim();
+    if(!question||busyRef.current)return;
+    setDraft('');
+    ask(question,false);
   };
 
   const openAssistant=()=>{
     setOpen(true);openRef.current=true;setError('');
-    setError('Toque em ATIVAR MICROFONE para começar a conversa.');
   };
   const closeAssistant=()=>{
     setOpen(false);openRef.current=false;setListening(false);
@@ -113,15 +126,19 @@ export default function MarketAssistant() {
   };
 
   return <div className={'market-assistant '+(open?'is-open':'')}>
-    {open&&<section className="market-assistant-panel" aria-label="Assistente MarketIA por voz">
-      <header className="market-assistant-head"><div className="market-assistant-avatar"><Bot size={22}/></div><div className="market-assistant-heading"><strong>Assistente MarketIA</strong><small>{busy?'Pensando…':listening?'Estou ouvindo você…':'Conversa por voz'}</small></div><button className="market-assistant-voice" onClick={()=>{setSpeaking(v=>{speakingRef.current=!v;if(v)window.speechSynthesis?.cancel();return !v;});}} title={speaking?'Desativar voz':'Ativar voz'}>{speaking?<Volume2 size={18}/>:<VolumeX size={18}/>}</button><button className="market-assistant-close" onClick={closeAssistant} aria-label="Fechar"><X size={19}/></button></header>
+    {open&&<section className="market-assistant-panel" aria-label="Assistente MarketIA">
+      <header className="market-assistant-head"><div className="market-assistant-avatar"><Bot size={22}/></div><div className="market-assistant-heading"><strong>Assistente MarketIA</strong><small>{busy?'Pensando…':listening?'Estou ouvindo você…':'Atendimento por texto e voz'}</small></div><button className="market-assistant-voice" onClick={()=>{setSpeaking(v=>{speakingRef.current=!v;if(v)window.speechSynthesis?.cancel();return !v;});}} title={speaking?'Desativar voz':'Ativar voz'}>{speaking?<Volume2 size={18}/>:<VolumeX size={18}/>}</button><button className="market-assistant-close" onClick={closeAssistant} aria-label="Fechar"><X size={19}/></button></header>
       <div className="market-assistant-messages" ref={listRef}>{messages.map((m,i)=><div key={i} className={'market-assistant-message '+m.role}><span className="message-role">{m.role==='user'?'Você':'MarketIA'}</span>{m.content}</div>)}{busy&&<div className="market-assistant-message assistant thinking"><LoaderCircle size={16}/> Estou preparando a resposta…</div>}</div>
       {error&&<div className="market-assistant-error">{error}</div>}
-      <div className="market-assistant-voice-area"><button type="button" className={'market-assistant-mic '+(listening?'active':'')} onClick={requestMicrophone} disabled={busy} aria-label="Permitir acesso ao microfone e falar"><Mic size={25}/><span>PERMITIR MICROFONE</span></button><strong>{busy?'Aguarde a resposta':listening?'Pode falar':'Toque para autorizar'}</strong><span>{listening?'Estou ouvindo sua pergunta.':'Toque no botão para autorizar o microfone e começar a falar.'}</span></div>
-      <p className="market-assistant-note">Usa o microfone e a voz disponíveis no seu aparelho. Não utiliza ElevenLabs.</p>
+      <form className="market-assistant-compose" onSubmit={sendText}>
+        <input value={draft} onChange={e=>setDraft(e.target.value)} placeholder="Digite sua dúvida..." aria-label="Digite sua dúvida" maxLength={1500}/>
+        <button type="submit" disabled={busy||!draft.trim()} aria-label="Enviar pergunta"><Send size={18}/></button>
+      </form>
+      <div className="market-assistant-voice-area"><button type="button" className={'market-assistant-mic '+(listening?'active':'')} onClick={requestMicrophone} disabled={busy} aria-label="Permitir acesso ao microfone e falar"><Mic size={25}/><span>{listening?'MICROFONE ATIVO':'ATIVAR MICROFONE'}</span></button><strong>{busy?'Aguarde a resposta':listening?'Pode falar':'Ou escreva sua pergunta acima'}</strong><span>{listening?'Estou ouvindo sua pergunta.':'Toque para autorizar o microfone e conversar por voz.'}</span></div>
+      <p className="market-assistant-note">A voz usa os recursos disponíveis no seu aparelho. Você também pode conversar por texto.</p>
     </section>}
-    {!open&&<div className="market-assistant-hint"><b>Precisa de ajuda?</b><span>Toque para conversar por voz</span></div>}
-    <button className={'market-assistant-robot '+(busy?'thinking':listening?'listening':'sleeping')} onClick={()=>open?closeAssistant():openAssistant()} aria-label={open?'Fechar assistente':'Conversar com assistente por voz'}>
+    {!open&&<div className="market-assistant-hint"><b>Precisa de ajuda?</b><span>Toque para conversar com a IA</span></div>}
+    <button className={'market-assistant-robot '+(busy?'thinking':listening?'listening':'sleeping')} onClick={()=>open?closeAssistant():openAssistant()} aria-label={open?'Fechar assistente':'Conversar com assistente'}>
       <span className="robot-aura"></span><span className="robot-head"><span className="robot-antenna"></span><span className="robot-eyes"><i></i><i></i></span><span className="robot-mouth"></span><span className="robot-cheek left"></span><span className="robot-cheek right"></span></span><span className="robot-body"><span></span></span><span className="robot-flame"></span>
     </button>
   </div>;
