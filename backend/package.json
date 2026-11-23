@@ -15,6 +15,7 @@
     "bcryptjs": "^2.4.3",
     "jsonwebtoken": "^9.0.2",
     "@aws-sdk/client-s3": "^3.850.0",
-    "@aws-sdk/s3-request-presigner": "^3.850.0"
+    "@aws-sdk/s3-request-presigner": "^3.850.0",
+    "cloudinary": "^2.7.0"
   }
 }
