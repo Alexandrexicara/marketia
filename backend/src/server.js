@@ -102,7 +102,7 @@ app.post('/api/auth/register', requireDatabase, async (req, res) => {
     const exists = await client.query('SELECT 1 FROM businesses WHERE slug=$1', [slug]);
     if (exists.rowCount) slug = `${slug}-${randomUUID().slice(0,8)}`;
     const businessResult = await client.query(
-      "INSERT INTO businesses (tenant_id,name,slug,segment,status) VALUES ($1,$2,$3,$4,'draft') RETURNING id,name,slug,segment,status",
+      "INSERT INTO businesses (tenant_id,name,slug,segment,status) VALUES ($1,$2,$3,$4,'published') RETURNING id,name,slug,segment,status",
       [tenant.id, companyName.trim(), slug, segment?.trim() || null]
     );
     await client.query('COMMIT');
@@ -173,7 +173,7 @@ app.post('/api/businesses', requireDatabase, auth, async (req, res) => {
     const exists = await pool.query('SELECT 1 FROM businesses WHERE slug=$1', [slug]);
     if (exists.rowCount) slug = `${slug}-${randomUUID().slice(0,8)}`;
     const { rows } = await pool.query(
-      "INSERT INTO businesses (tenant_id,name,slug,segment,description,website,public_email,public_phone,city,state) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *",
+      "INSERT INTO businesses (tenant_id,name,slug,segment,description,website,public_email,public_phone,city,state,status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'published') RETURNING *",
       [membership.rows[0].tenant_id,name.trim(),slug,segment || null,description || null,website || null,publicEmail || null,publicPhone || null,city || null,state || null]
     );
     return res.status(201).json({ business: rows[0] });
@@ -238,7 +238,7 @@ app.get('/api/leads', requireDatabase, auth, async (req, res) => {
 app.get('/api/public/business/:slug', requireDatabase, async (req, res) => {
   try {
     const { rows } = await pool.query(
-      "SELECT id,name,slug,segment,description,website,public_email,public_phone,city,state,seo_title,seo_description,logo_url,instagram_url,facebook_url,whatsapp_url,keywords,canonical_url FROM businesses WHERE slug=$1 AND status='published' LIMIT 1",
+      "SELECT id,name,slug,segment,description,website,public_email,public_phone,city,state,seo_title,seo_description,logo_url,instagram_url,facebook_url,whatsapp_url,keywords,canonical_url FROM businesses WHERE slug=$1 AND status <> 'archived' LIMIT 1",
       [req.params.slug]
     );
     if (!rows.length) return res.status(404).json({ error: 'Business not found' });
