@@ -162,7 +162,8 @@ export function registerExtendedRoutes(app, { pool, auth, requireDatabase, slugi
   });
 
   // Assistente virtual NVIDIA do MarketIA
-  import('./assistant-routes.js').then(({ default: assistantRouter }) => {
+  import('./assistant-routes.js').then(({ default: assistantRouter, registerJarvisAssistantRoute }) => {
     app.use('/api/assistant', assistantRouter);
+    registerJarvisAssistantRoute(app, { pool, auth });
   }).catch(error => console.error('MarketIA assistant route failed to load:', error.message));
 }
