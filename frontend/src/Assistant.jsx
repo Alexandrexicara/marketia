@@ -44,6 +44,7 @@ export default function MarketAssistant() {
   const speakingRef=useRef(true);
 
   useEffect(()=>{openRef.current=open;},[open]);
+  useEffect(()=>{const openHelp=()=>{setOpen(true);openRef.current=true;setError('');};window.addEventListener('marketia:open-help',openHelp);return()=>window.removeEventListener('marketia:open-help',openHelp);},[]);
   useEffect(()=>{busyRef.current=busy;},[busy]);
   useEffect(()=>{speakingRef.current=speaking;},[speaking]);
   useEffect(()=>{if(listRef.current)listRef.current.scrollTop=listRef.current.scrollHeight;},[messages,open]);
