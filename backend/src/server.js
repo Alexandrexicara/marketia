@@ -243,7 +243,8 @@ app.get('/api/public/business/:slug', requireDatabase, async (req, res) => {
     );
     if (!rows.length) return res.status(404).json({ error: 'Business not found' });
     const offerings = await pool.query("SELECT id,kind,name,description,price,currency,image_url FROM offerings WHERE business_id=$1 AND status='published' ORDER BY created_at DESC", [rows[0].id]);
-    return res.json({ business: rows[0], offerings: offerings.rows });
+    const media = await pool.query("SELECT id,media_type,file_name,mime_type,size_bytes,public_url,created_at FROM business_media WHERE business_id=$1 AND status='ready' ORDER BY created_at DESC", [rows[0].id]);
+    return res.json({ business: rows[0], offerings: offerings.rows, media: media.rows });
   } catch (error) { console.error('Public business lookup failed:', error.message); return res.status(500).json({ error: 'Internal server error' }); }
 });
 
