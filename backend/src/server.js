@@ -6,7 +6,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { randomUUID } from 'node:crypto';
 import { registerExtendedRoutes } from './extended-routes.js';
-import { registerMediaRoutes } from './media-routes.js';
+import { registerMediaRoutes, ensureMediaSchema } from './media-routes.js';
 import { ensurePaymentsSchema, registerPaymentRoutes } from './payment-routes.js';
 
 const app = express();
@@ -273,7 +273,7 @@ app.use((err, _req, res, _next) => {
 });
 
 const start = async () => {
-  if (pool) await ensurePaymentsSchema(pool);
+  if (pool) { await ensurePaymentsSchema(pool); await ensureMediaSchema(pool); }
   app.listen(port, () => console.log(`MarketIA API listening on port ${port}`));
 };
 start().catch(error => { console.error('MarketIA startup failed:', error.message); process.exit(1); });
