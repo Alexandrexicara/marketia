@@ -3,7 +3,7 @@ import { Bot, X, Mic, Volume2, VolumeX, LoaderCircle, Send } from 'lucide-react'
 import './Assistant.css';
 
 const API = 'https://marketia-54ra.onrender.com';
-const greeting = 'Olá! Eu sou Jarvis, o assistente de marketing do MarketIA. Você pode escrever sua dúvida ou tocar no microfone para falar comigo.';
+const greeting = 'Olá! Sou o assistente de ajuda do MarketIA. Posso explicar como cadastrar sua empresa, usar as ferramentas e encontrar as funções do sistema.';
 
 const cleanForSpeech = (value) => String(value || '')
   .replace(/```[\s\S]*?```/g, ' ')
@@ -44,7 +44,6 @@ export default function MarketAssistant() {
   const speakingRef=useRef(true);
 
   useEffect(()=>{openRef.current=open;},[open]);
-  useEffect(()=>{const openFromHub=()=>{setOpen(true);openRef.current=true;setError('');};window.addEventListener('marketia:open-assistant',openFromHub);return()=>window.removeEventListener('marketia:open-assistant',openFromHub);},[]);
   useEffect(()=>{busyRef.current=busy;},[busy]);
   useEffect(()=>{speakingRef.current=speaking;},[speaking]);
   useEffect(()=>{if(listRef.current)listRef.current.scrollTop=listRef.current.scrollHeight;},[messages,open]);
@@ -122,7 +121,7 @@ export default function MarketAssistant() {
     setMessages(old=>[...old,{role:'user',content:question}].slice(-12));
     try{
       const history=[...messages,{role:'user',content:question}].slice(-12);
-      const sessionToken=localStorage.getItem('marketia_token')||'';const payload=JSON.stringify({messages:history.map(({role,content})=>({role,content}))});let response=await fetch(API+(sessionToken?'/api/assistant/jarvis/chat':'/api/assistant/chat'),{method:'POST',headers:{'Content-Type':'application/json',...(sessionToken?{Authorization:'Bearer '+sessionToken}:{})},body:payload});if(sessionToken&&response.status===404){response=await fetch(API+'/api/assistant/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:payload});}
+      const response=await fetch(API+'/api/assistant/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:history.map(({role,content})=>({role,content}))})});
       const data=await response.json().catch(()=>({}));
       if(!response.ok)throw new Error(data.error||'Não consegui responder agora.');
       const reply=String(data.reply||'').trim();
@@ -153,9 +152,9 @@ export default function MarketAssistant() {
   };
 
   return <div className={'market-assistant '+(open?'is-open':'')}>
-    {open&&<section className="market-assistant-panel" aria-label="Assistente MarketIA">
-      <header className="market-assistant-head"><div className="market-assistant-avatar"><Bot size={22}/></div><div className="market-assistant-heading"><strong>Jarvis · MarketIA</strong><small>{busy?'Pensando…':listening?'Estou ouvindo você…':'Atendimento por texto e voz'}</small></div><button className="market-assistant-voice" onClick={()=>{setSpeaking(v=>{speakingRef.current=!v;if(v)window.speechSynthesis?.cancel();return !v;});}} title={speaking?'Desativar voz':'Ativar voz'}>{speaking?<Volume2 size={18}/>:<VolumeX size={18}/>}</button><button className="market-assistant-close" onClick={closeAssistant} aria-label="Fechar"><X size={19}/></button></header>
-      <div className="market-assistant-messages" ref={listRef}>{messages.map((m,i)=><div key={i} className={'market-assistant-message '+m.role}><span className="message-role">{m.role==='user'?'Você':'Jarvis'}</span>{m.content}</div>)}{busy&&<div className="market-assistant-message assistant thinking"><LoaderCircle size={16}/> Estou preparando a resposta…</div>}</div>
+    {open&&<section className="market-assistant-panel" aria-label="Ajuda do MarketIA">
+      <header className="market-assistant-head"><div className="market-assistant-avatar"><Bot size={22}/></div><div className="market-assistant-heading"><strong>Ajuda do MarketIA</strong><small>{busy?'Pensando…':listening?'Estou ouvindo você…':'Atendimento por texto e voz'}</small></div><button className="market-assistant-voice" onClick={()=>{setSpeaking(v=>{speakingRef.current=!v;if(v)window.speechSynthesis?.cancel();return !v;});}} title={speaking?'Desativar voz':'Ativar voz'}>{speaking?<Volume2 size={18}/>:<VolumeX size={18}/>}</button><button className="market-assistant-close" onClick={closeAssistant} aria-label="Fechar"><X size={19}/></button></header>
+      <div className="market-assistant-messages" ref={listRef}>{messages.map((m,i)=><div key={i} className={'market-assistant-message '+m.role}><span className="message-role">{m.role==='user'?'Você':'Ajuda MarketIA'}</span>{m.content}</div>)}{busy&&<div className="market-assistant-message assistant thinking"><LoaderCircle size={16}/> Estou preparando a resposta…</div>}</div>
       {error&&<div className="market-assistant-error">{error}</div>}
       <form className="market-assistant-compose" onSubmit={sendText}>
         <input value={draft} onChange={e=>setDraft(e.target.value)} placeholder="Digite sua dúvida..." aria-label="Digite sua dúvida" maxLength={1500}/>
@@ -164,7 +163,7 @@ export default function MarketAssistant() {
       <div className="market-assistant-voice-area"><button type="button" className={'market-assistant-mic '+(listening?'active':'')} onClick={requestMicrophone} disabled={busy} aria-label="Permitir acesso ao microfone e falar"><Mic size={25}/><span>{listening?'MICROFONE ATIVO':'ATIVAR MICROFONE'}</span></button><strong>{busy?'Aguarde a resposta':listening?'Pode falar':'Ou escreva sua pergunta acima'}</strong><span>{listening?'Estou ouvindo sua pergunta.':'Toque para autorizar o microfone e conversar por voz.'}</span></div>
       <p className="market-assistant-note">A voz usa os recursos disponíveis no seu aparelho. Você também pode conversar por texto.</p>
     </section>}
-    {!open&&<div className="market-assistant-hint"><b>Precisa de ajuda?</b><span>Toque para conversar com a IA</span></div>}
+    {!open&&<div className="market-assistant-hint"><b>Precisa de ajuda?</b><span>Tire dúvidas sobre como usar o sistema</span></div>}
     <button className={'market-assistant-robot '+(busy?'thinking':listening?'listening':'sleeping')} onClick={()=>open?closeAssistant():openAssistant()} aria-label={open?'Fechar assistente':'Conversar com assistente'}>
       <span className="robot-aura"></span><span className="robot-head"><span className="robot-antenna"></span><span className="robot-eyes"><i></i><i></i></span><span className="robot-mouth"></span><span className="robot-cheek left"></span><span className="robot-cheek right"></span></span><span className="robot-body"><span></span></span><span className="robot-flame"></span>
     </button>
