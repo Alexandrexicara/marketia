@@ -121,7 +121,7 @@ export default function MarketAssistant() {
     setMessages(old=>[...old,{role:'user',content:question}].slice(-12));
     try{
       const history=[...messages,{role:'user',content:question}].slice(-12);
-      const response=await fetch(API+'/api/assistant/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:history.map(({role,content})=>({role,content}))})});
+      const sessionToken=localStorage.getItem('marketia_token')||'';const endpoint=sessionToken?'/api/assistant/jarvis/chat':'/api/assistant/chat';const response=await fetch(API+endpoint,{method:'POST',headers:{'Content-Type':'application/json',...(sessionToken?{Authorization:'Bearer '+sessionToken}:{})},body:JSON.stringify({messages:history.map(({role,content})=>({role,content}))})});
       const data=await response.json().catch(()=>({}));
       if(!response.ok)throw new Error(data.error||'Não consegui responder agora.');
       const reply=String(data.reply||'').trim();
