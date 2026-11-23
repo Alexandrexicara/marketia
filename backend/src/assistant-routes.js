@@ -63,4 +63,70 @@ router.post('/chat', async (req, res) => {
   }
 });
 
+
+export function registerJarvisAssistantRoute(app, { pool, auth }) {
+  const userRequests = new Map();
+  app.post('/api/assistant/jarvis/chat', auth, async (req, res) => {
+    const now = Date.now();
+    const rateKey = String(req.userId || req.ip || 'unknown');
+    const recent = (userRequests.get(rateKey) || []).filter(time => now - time < 60_000);
+    if (recent.length >= 20) return res.status(429).json({ error: 'Muitas mensagens em pouco tempo. Aguarde um minuto.' });
+    recent.push(now);
+    userRequests.set(rateKey, recent);
+    const baseUrl = String(process.env.JARVIS_BASE_URL || 'https://jarvis-u9jh.onrender.com').replace(/\/$/, '');
+    const proxyKey = String(process.env.JARVIS_PROXY_KEY || '');
+    if (!proxyKey) return res.status(503).json({ error: 'A conexão privada com o Jarvis ainda não foi configurada no servidor.' });
+    try {
+      const businessesResult = await pool.query(
+        `SELECT b.id,b.tenant_id,b.name,b.segment,b.description,b.city,b.state,b.website,
+          b.instagram_url,b.facebook_url,b.whatsapp_url
+         FROM businesses b JOIN tenant_memberships tm ON tm.tenant_id=b.tenant_id
+         WHERE tm.user_id=$1 ORDER BY b.created_at DESC LIMIT 20`,
+        [req.userId]
+      );
+      if (!businessesResult.rowCount) return res.status(400).json({ error: 'Cadastre uma empresa no MarketIA antes de usar o Jarvis com dados do negócio.' });
+      const businesses = businessesResult.rows;
+      const businessId = String(req.body?.businessId || '');
+      const selected = businessId ? businesses.filter(b => b.id === businessId) : businesses;
+      if (businessId && !selected.length) return res.status(404).json({ error: 'Empresa não encontrada na sua conta.' });
+      const ids = selected.map(b => b.id);
+      const [offeringsResult, campaignsResult, draftsResult, leadsResult] = await Promise.all([
+        pool.query("SELECT business_id,kind,name,description,price,status FROM offerings WHERE business_id=ANY($1::uuid[]) ORDER BY created_at DESC LIMIT 40", [ids]),
+        pool.query("SELECT business_id,name,channel,objective,budget,status FROM campaigns WHERE business_id=ANY($1::uuid[]) ORDER BY created_at DESC LIMIT 20", [ids]),
+        pool.query("SELECT business_id,channel,topic,content,status FROM marketing_drafts WHERE business_id=ANY($1::uuid[]) ORDER BY created_at DESC LIMIT 12", [ids]),
+        pool.query("SELECT business_id,COUNT(*)::int AS total FROM leads WHERE business_id=ANY($1::uuid[]) GROUP BY business_id", [ids])
+      ]);
+      const context = {
+        businesses: selected,
+        offerings: offeringsResult.rows,
+        campaigns: campaignsResult.rows,
+        recent_content_drafts: draftsResult.rows,
+        lead_counts: leadsResult.rows
+      };
+      const incoming = Array.isArray(req.body?.messages) ? req.body.messages : [];
+      const messages = incoming.filter(item => item && ['user','assistant'].includes(item.role) && typeof item.content === 'string')
+        .slice(-12).map(item => ({ role: item.role, content: item.content.slice(0, 2500) }));
+      if (!messages.length || messages[messages.length - 1].role !== 'user') return res.status(400).json({ error: 'Envie uma pergunta para o Jarvis.' });
+      const tenantId = [...new Set(selected.map(b => b.tenant_id))].join(',');
+      const upstream = await fetch(baseUrl + '/v1/marketia/chat', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + proxyKey, 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ tenant_id: tenantId, business_context: JSON.stringify(context).slice(0, 12000), messages }),
+        signal: AbortSignal.timeout(65_000)
+      });
+      const data = await upstream.json().catch(() => ({}));
+      if (!upstream.ok) {
+        const detail = data?.error?.message || data?.message || 'O Jarvis não conseguiu responder agora.';
+        return res.status(upstream.status === 401 ? 503 : 502).json({ error: detail });
+      }
+      const reply = String(data?.choices?.[0]?.message?.content || '').trim();
+      if (!reply) return res.status(502).json({ error: 'O Jarvis retornou uma resposta vazia.' });
+      return res.json({ reply, provider: 'jarvis', model: data?.model || null });
+    } catch (error) {
+      console.error('MarketIA Jarvis assistant failed:', error?.name || '', error?.message || '');
+      return res.status(502).json({ error: 'Não foi possível conectar ao Jarvis. Verifique se o serviço está ativo no Render.' });
+    }
+  });
+}
+
 export default router;
