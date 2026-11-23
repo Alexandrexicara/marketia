@@ -3,7 +3,7 @@ import { Bot, X, Mic, Volume2, VolumeX, LoaderCircle, Send } from 'lucide-react'
 import './Assistant.css';
 
 const API = 'https://marketia-54ra.onrender.com';
-const greeting = 'Olá! Eu sou o assistente do MarketIA. Você pode escrever sua dúvida ou tocar no microfone para falar comigo.';
+const greeting = 'Olá! Eu sou Jarvis, o assistente de marketing do MarketIA. Você pode escrever sua dúvida ou tocar no microfone para falar comigo.';
 
 const cleanForSpeech = (value) => String(value || '')
   .replace(/```[\s\S]*?```/g, ' ')
@@ -44,6 +44,7 @@ export default function MarketAssistant() {
   const speakingRef=useRef(true);
 
   useEffect(()=>{openRef.current=open;},[open]);
+  useEffect(()=>{const openFromHub=()=>{setOpen(true);openRef.current=true;setError('');};window.addEventListener('marketia:open-assistant',openFromHub);return()=>window.removeEventListener('marketia:open-assistant',openFromHub);},[]);
   useEffect(()=>{busyRef.current=busy;},[busy]);
   useEffect(()=>{speakingRef.current=speaking;},[speaking]);
   useEffect(()=>{if(listRef.current)listRef.current.scrollTop=listRef.current.scrollHeight;},[messages,open]);
@@ -153,8 +154,8 @@ export default function MarketAssistant() {
 
   return <div className={'market-assistant '+(open?'is-open':'')}>
     {open&&<section className="market-assistant-panel" aria-label="Assistente MarketIA">
-      <header className="market-assistant-head"><div className="market-assistant-avatar"><Bot size={22}/></div><div className="market-assistant-heading"><strong>Assistente MarketIA</strong><small>{busy?'Pensando…':listening?'Estou ouvindo você…':'Atendimento por texto e voz'}</small></div><button className="market-assistant-voice" onClick={()=>{setSpeaking(v=>{speakingRef.current=!v;if(v)window.speechSynthesis?.cancel();return !v;});}} title={speaking?'Desativar voz':'Ativar voz'}>{speaking?<Volume2 size={18}/>:<VolumeX size={18}/>}</button><button className="market-assistant-close" onClick={closeAssistant} aria-label="Fechar"><X size={19}/></button></header>
-      <div className="market-assistant-messages" ref={listRef}>{messages.map((m,i)=><div key={i} className={'market-assistant-message '+m.role}><span className="message-role">{m.role==='user'?'Você':'MarketIA'}</span>{m.content}</div>)}{busy&&<div className="market-assistant-message assistant thinking"><LoaderCircle size={16}/> Estou preparando a resposta…</div>}</div>
+      <header className="market-assistant-head"><div className="market-assistant-avatar"><Bot size={22}/></div><div className="market-assistant-heading"><strong>Jarvis · MarketIA</strong><small>{busy?'Pensando…':listening?'Estou ouvindo você…':'Atendimento por texto e voz'}</small></div><button className="market-assistant-voice" onClick={()=>{setSpeaking(v=>{speakingRef.current=!v;if(v)window.speechSynthesis?.cancel();return !v;});}} title={speaking?'Desativar voz':'Ativar voz'}>{speaking?<Volume2 size={18}/>:<VolumeX size={18}/>}</button><button className="market-assistant-close" onClick={closeAssistant} aria-label="Fechar"><X size={19}/></button></header>
+      <div className="market-assistant-messages" ref={listRef}>{messages.map((m,i)=><div key={i} className={'market-assistant-message '+m.role}><span className="message-role">{m.role==='user'?'Você':'Jarvis'}</span>{m.content}</div>)}{busy&&<div className="market-assistant-message assistant thinking"><LoaderCircle size={16}/> Estou preparando a resposta…</div>}</div>
       {error&&<div className="market-assistant-error">{error}</div>}
       <form className="market-assistant-compose" onSubmit={sendText}>
         <input value={draft} onChange={e=>setDraft(e.target.value)} placeholder="Digite sua dúvida..." aria-label="Digite sua dúvida" maxLength={1500}/>
