@@ -40,3 +40,22 @@ button{font:inherit;cursor:pointer}.nav-item{border:0;background:transparent;wid
 
 /* Galeria pública de imagens e vídeos das empresas */
 .business-media-section{margin-top:26px;padding-top:24px;border-top:1px solid #29354d}.business-media-section .business-panel-head{display:flex;align-items:center;justify-content:space-between;gap:16px}.media-empty{margin-top:14px}.public-media{margin:34px 0}.public-media h2{font-size:22px;margin:0 0 16px;color:#f0f3ff}.public-media-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}.public-media-grid article{overflow:hidden;border:1px solid #dfe5ef;border-radius:14px;background:#fff}.public-media-grid img,.public-media-grid video{display:block;width:100%;max-height:420px;min-height:180px;object-fit:cover;background:#101827}@media(max-width:650px){.business-media-section .business-panel-head{align-items:flex-start;flex-direction:column}.public-media-grid{grid-template-columns:1fr 1fr;gap:9px}.public-media-grid img,.public-media-grid video{min-height:130px}}
+
+
+/* Jarvis dentro da Central de Crescimento */
+.jarvis-hub{overflow:hidden;background:radial-gradient(circle at 92% 5%,rgba(105,119,255,.16),transparent 34%),var(--panel,#111827);}
+.jarvis-hub-top{display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding:10px 4px 24px;border-bottom:1px solid var(--border,#293449);}
+.jarvis-brand-mark{width:64px;height:64px;display:grid;place-items:center;border-radius:20px;color:#dce8ff;background:linear-gradient(145deg,#6478ff,#263b77);box-shadow:0 10px 30px #5268e544;}
+.jarvis-hub-copy{flex:1;min-width:220px;}
+.jarvis-eyebrow{font-size:11px;font-weight:800;letter-spacing:.12em;color:#8fa5ff;}
+.jarvis-hub-copy h2{font-size:30px;line-height:1.1;margin:5px 0 7px;color:var(--text,#f5f7ff);}
+.jarvis-hub-copy p{margin:0;color:var(--muted,#aab4c7);max-width:720px;line-height:1.55;}
+.jarvis-status{display:inline-flex;align-items:center;gap:8px;padding:9px 12px;border:1px solid #806a36;border-radius:999px;color:#f0d18b;font-size:12px;font-weight:700;background:#806a3618;}
+.jarvis-status i{width:8px;height:8px;border-radius:50%;background:#e5b84f;box-shadow:0 0 10px #e5b84f88;}
+.jarvis-hub-details{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:22px 0;}
+.jarvis-hub-details>div{display:flex;flex-direction:column;gap:7px;padding:16px;border:1px solid var(--border,#293449);border-radius:14px;background:rgba(255,255,255,.025);}
+.jarvis-hub-details b{color:var(--text,#f5f7ff);font-size:14px;}
+.jarvis-hub-details span,.jarvis-hub-footer p{color:var(--muted,#aab4c7);font-size:13px;line-height:1.55;}
+.jarvis-hub-footer{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;padding-top:17px;border-top:1px solid var(--border,#293449);}
+.jarvis-hub-footer p{margin:0;max-width:650px;}
+@media(max-width:760px){.jarvis-hub-details{grid-template-columns:1fr;}.jarvis-hub-top{align-items:flex-start}.jarvis-status{margin-left:0}}
